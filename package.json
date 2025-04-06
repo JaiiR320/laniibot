@@ -1,0 +1,13 @@
+{
+  "name": "discord-role-bot",
+  "version": "1.0.0",
+  "description": "A Discord bot that can add roles to multiple users",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.18.0",
+    "dotenv": "^16.4.5"
+  }
+}
