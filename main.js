@@ -11,12 +11,21 @@ const client = new Client({
   ],
 });
 
+client.once("ready", () => {
+  console.log(`Laniibot active`);
+});
+
 // Set the prefix
 let prefix = "!";
 client.on("messageCreate", (message) => {  
   // Only process messages from threads
   if (!message.channel.isThread()) return;
   if (!message.content.startsWith(prefix) || message.author.bot) return;
+  // Check if the user has admin permissions
+  const keeperId = "1330620045407031306"
+  if (!message.member.roles.cache.has(keeperId)) {
+    return message.reply("You don't have permission to use this command.");
+  }
   const args = message.content.slice(prefix.length).trim().split(/ +/g);
   const command = args.shift().toLowerCase();
 
