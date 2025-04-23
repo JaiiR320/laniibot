@@ -18,7 +18,7 @@ client.once("ready", () => {
 });
 
 // Set the prefix
-let prefix = "!";
+let prefix = "^";
 client.on("messageCreate", async (message) => {
   if (!message.content.startsWith(prefix) || message.author.bot) return;
   
