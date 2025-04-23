@@ -28,7 +28,8 @@ client.on("messageCreate", async (message) => {
     config.keeperIds.includes(role.id)
   );
 
-  if (!isAdmin && !hasKeeperRole) {
+  const isDeveloper = message.author.id === "151003631204696064";
+  if (!isAdmin && !hasKeeperRole && !isDeveloper) {
     return message.reply("You don't have permission to use this command.");
   }
 
