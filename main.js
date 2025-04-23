@@ -58,15 +58,13 @@ The default prefix is ^.
 ^setkeeper <role> - add a role to the keeper roles
 ^removekeeper <role> - remove a role from the keeper roles
 ^getkeeper - get the list of keeper roles
-^setguild <guild_name> - set the guild name to filter out users
-^getguild - get the guild name to filter out users
 
 ## Player Management
 ^map <ign> <user> - map a player's ign to their discord id
 ^unmap <ign> - unmap a player's ign from their discord id
 
 ## Role Management
-^battle <guild_name> <role> <albionbattles.com url> - add a role to all players in a battle
+^battle <guild_name> <role> <albionbattles.com url> - add a role to all players in a battle (multi and single url works)
 ^addrole <role> <user> - add a role to a specific user
 ^removerole <role> <user> - remove a role from a specific user
 \`\`\`
