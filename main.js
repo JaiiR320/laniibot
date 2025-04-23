@@ -21,16 +21,17 @@ client.once("ready", () => {
 let prefix = "^";
 client.on("messageCreate", async (message) => {
   if (!message.content.startsWith(prefix) || message.author.bot) return;
-  
-  // Check if user has any of the keeper roles
-  const hasKeeperRole = message.member.roles.cache.some(role => 
+
+  // Check if user is an administrator or has any of the keeper roles
+  const isAdmin = message.member.permissions.has("Administrator");
+  const hasKeeperRole = message.member.roles.cache.some((role) =>
     config.keeperIds.includes(role.id)
   );
-  
-  if (!hasKeeperRole) {
+
+  if (!isAdmin && !hasKeeperRole) {
     return message.reply("You don't have permission to use this command.");
   }
-  
+
   const args = message.content.slice(prefix.length).trim().split(/ +/g);
   const command = args.shift().toLowerCase();
 
@@ -44,40 +45,31 @@ client.on("messageCreate", async (message) => {
     message.reply(`
       \`\`\`md
 # Commands
-!help - get a list of commands
-!ping - check if the bot is responding
+^help - get a list of commands
+^ping - check if the bot is responding
+
+## Permissions
+Server administrators have inherent permissions to use all commands.
+Keeper roles can also use all commands.
+The default prefix is ^.
 
 ## Configuration
-!setkeeper <role> - add a role to the keeper roles
-!removekeeper <role> - remove a role from the keeper roles
-!getkeeper - get the list of keeper roles
-!setguild <guild_name> - set the guild name to filter out users
-!getguild - get the guild name to filter out users
+^setkeeper <role> - add a role to the keeper roles
+^removekeeper <role> - remove a role from the keeper roles
+^getkeeper - get the list of keeper roles
+^setguild <guild_name> - set the guild name to filter out users
+^getguild - get the guild name to filter out users
 
 ## Player Management
-!map <ign> <user> - map a player's ign to their discord id
-!unmap <ign> - unmap a player's ign from their discord id
+^map <ign> <user> - map a player's ign to their discord id
+^unmap <ign> - unmap a player's ign from their discord id
 
 ## Role Management
-!battle <role> <battle_id> - add a role to all players in a battle
-!addrole <role> <user> - add a role to a specific user
-!removerole <role> <user> - remove a role from a specific user
+^battle <guild_name> <role> <albionbattles.com url> - add a role to all players in a battle
+^addrole <role> <user> - add a role to a specific user
+^removerole <role> <user> - remove a role from a specific user
 \`\`\`
       `);
-  }
-
-  if (command === "setguild") {
-    const guildName = args[0];
-    if (!guildName) {
-      return message.reply("Please provide a guild name.");
-    }
-    config.guildName = guildName;
-    fs.writeFileSync("./config.json", JSON.stringify(config, null, 2));
-    message.reply(`Guild name set to ${guildName}`);
-  }
-
-  if (command === "getguild") {
-    message.reply(`Guild name is ${config.guildName}`);
   }
 
   if (command === "setkeeper") {
@@ -85,12 +77,12 @@ client.on("messageCreate", async (message) => {
     if (!role) {
       return message.reply("Please provide a role.");
     }
-    
+
     // Initialize keeperIds array if it doesn't exist
     if (!config.keeperIds) {
       config.keeperIds = [];
     }
-    
+
     // Add the role if it's not already in the array
     if (!config.keeperIds.includes(role.id)) {
       config.keeperIds.push(role.id);
@@ -105,12 +97,12 @@ client.on("messageCreate", async (message) => {
     if (!config.keeperIds || config.keeperIds.length === 0) {
       return message.reply("No keeper roles are set.");
     }
-    
-    const roleMentions = config.keeperIds.map(roleId => {
+
+    const roleMentions = config.keeperIds.map((roleId) => {
       const role = message.guild.roles.cache.get(roleId);
       return role ? `<@&${role.id}>` : `Unknown Role (${roleId})`;
     });
-    
+
     message.reply(`Keeper roles: ${roleMentions.join(", ")}`);
   }
 
@@ -119,12 +111,12 @@ client.on("messageCreate", async (message) => {
     if (!role) {
       return message.reply("Please provide a role to remove.");
     }
-    
+
     if (!config.keeperIds || !config.keeperIds.includes(role.id)) {
       return message.reply(`<@&${role.id}> is not a keeper role`);
     }
-    
-    config.keeperIds = config.keeperIds.filter(id => id !== role.id);
+
+    config.keeperIds = config.keeperIds.filter((id) => id !== role.id);
     fs.writeFileSync("./config.json", JSON.stringify(config, null, 2));
     message.reply(`Removed <@&${role.id}> from keeper roles`);
   }
@@ -165,7 +157,8 @@ client.on("messageCreate", async (message) => {
     if (!role) {
       return message.reply("Please mention a role to add.");
     }
-    const url = args[1];
+
+    const url = args[args.length - 1];
     if (!url) {
       return message.reply("Please provide a URL.");
     }
@@ -173,13 +166,17 @@ client.on("messageCreate", async (message) => {
     if (!battleIds) {
       return message.reply("Invalid URL.");
     }
+    const guildName = args.slice(0, -2).join(" ");
+    console.log(guildName);
     const players = await getPlayers(battleIds);
     const guildPlayers = players.filter((player) => {
-      return player.guildName === config.guildName;
+      return player.guildName === guildName;
     });
 
     if (guildPlayers.length === 0) {
-      return message.reply(`No players from ${config.guildName} found in battle.`);
+      return message.reply(
+        `No players from ${guildName} found in battle.`
+      );
     }
 
     let noID = [];
