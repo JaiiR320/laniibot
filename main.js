@@ -162,12 +162,12 @@ The default prefix is ^.
       return message.reply("Please provide a URL.");
     }
     const battleIds = battleIDs(url);
+    const isEU = url.includes("eu.albionbattles.com");
     if (!battleIds) {
       return message.reply("Invalid URL.");
     }
     const guildName = args.slice(0, -2).join(" ");
-    console.log(guildName);
-    const players = await getPlayers(battleIds);
+    const players = await getPlayers(battleIds, isEU);
     const guildPlayers = players.filter((player) => {
       return player.guildName === guildName;
     });
@@ -286,10 +286,10 @@ function battleIDs(url) {
   }
 }
 
-async function getPlayers(battleIds) {
+async function getPlayers(battleIds, isEU) {
   try {
     const response = await axios.get(
-      `https://api.albionbattles.com/battles/multilog/${battleIds.join(",")}`
+      `https://api${isEU ? "-eu" : ""}.albionbattles.com/battles/multilog/${battleIds.join(",")}`
     );
     const players = response.data.players.players;
     const playerData = [];
