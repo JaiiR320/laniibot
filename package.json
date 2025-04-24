@@ -4,7 +4,8 @@
   "description": "A Discord bot that can add roles to multiple users",
   "main": "main.js",
   "scripts": {
-    "start": "node main.js"
+    "start": "node main.js",
+    "mass": "node mass.js"
   },
   "dependencies": {
     "discord.js": "^14.18.0",
