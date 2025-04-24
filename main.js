@@ -262,7 +262,8 @@ function battleIDs(url) {
   try {
     const urlObj = new URL(url);
 
-    if (urlObj.hostname !== "albionbattles.com") {
+    // Check for both domains
+    if (!["albionbattles.com", "eu.albionbattles.com"].includes(urlObj.hostname)) {
       return false;
     }
 
