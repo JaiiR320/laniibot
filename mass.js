@@ -1,6 +1,6 @@
-const fs = require("fs");
-const { Client, IntentsBitField } = require("discord.js");
-require("dotenv").config();
+import { Client, IntentsBitField } from "discord.js";
+import { readFileSync } from "fs";
+import { config } from "./config.json";
 
 // Create a new client instance
 const client = new Client({

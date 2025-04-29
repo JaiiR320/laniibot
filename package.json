@@ -1,5 +1,5 @@
 {
-  "name": "discord-role-bot",
+  "name": "laniibot",
   "version": "1.0.0",
   "description": "A Discord bot that can add roles to multiple users",
   "main": "main.js",
@@ -8,8 +8,12 @@
     "mass": "node mass.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
+    "axios": "^1.7.7",
     "discord.js": "^14.18.0",
-    "dotenv": "^16.4.5",
-    "axios": "^1.7.7"
-  }
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {},
+  "author": "",
+  "license": "ISC"
 }
