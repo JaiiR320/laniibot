@@ -37,7 +37,6 @@ module.exports = {
     if (!battleIds) {
       return interaction.followUp({
         content: "Invalid URL.",
-        flags: MessageFlags.Ephemeral,
       });
     }
     const isEU = boardUrl.includes("eu.albionbattles.com");
@@ -49,42 +48,39 @@ module.exports = {
     });
 
     const discordIds = await getDiscordIds(players);
-    const haveIds = discordIds.filter((mapping) => mapping.discordId);
+    const haveIds = discordIds.filter((mapping) => mapping.id);
     const missingIds = players.filter(
-      (player) => !discordIds.find((mapping) => mapping.playerName === player)
+      (player) => !discordIds.find((mapping) => mapping.username === player)
     );
 
     if (missingIds.length > 0) {
       await interaction.followUp({
         content: `Players missing Discord IDs: ${missingIds.join(", ")}`,
-        flags: MessageFlags.Ephemeral,
       });
     }
     let skips = [];
     let completed = [];
-    haveIds.forEach(async (mapping) => {
-      try {
-        const member = await interaction.guild.members.fetch(mapping.discordId);
-        console.log(member ? "true" : "false");
+    await Promise.all(
+      haveIds.map(async (mapping) => {
         try {
-          await member.roles.add(role);
-          completed.push(mapping.playerName);
+          const member = await interaction.guild.members.fetch(mapping.id);
+          try {
+            await member.roles.add(role);
+            completed.push(mapping.username);
+          } catch (error) {
+            skips.push(mapping.username);
+          }
         } catch (error) {
-          skips.push(mapping.playerName);
+          skips.push(mapping.username);
         }
-      } catch (error) {
-        skips.push(mapping.playerName);
-      }
-    });
-    console.log(completed);
-    console.log(skips);
+      })
+    );
     return interaction.followUp({
       content: `Finished adding ${
         completed.length
       } ${guild} players to the role ${role}\nSkipped ${
-        skips.length
-      } players: ${skips.join(", ")}`,
-      flags: MessageFlags.Ephemeral,
+        skips.length + missingIds.length
+      } players: ${[...skips, ...missingIds].join(", ")}`,
     });
   },
 };
@@ -143,9 +139,9 @@ async function getPlayers(battleIds, guildName, isEU) {
 
 async function getDiscordIds(players) {
   const { data, error } = await supabase
-    .from("Players")
-    .select("playerName, discordId")
-    .in("playerName", players);
+    .from("players")
+    .select("username, id")
+    .in("username", players);
   if (error) {
     console.error(error);
     return [];

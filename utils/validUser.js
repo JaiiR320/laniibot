@@ -1,5 +1,3 @@
-const { GuildMember } = require("discord.js");
-
 const developerId = "151003631204696064";
 
 function validUser(user) {
