@@ -144,7 +144,7 @@ async function getDiscordIds(players) {
     .in("username", players);
   if (error) {
     console.error(error);
-    return [];
+    return [];  
   }
   return data;
 }
