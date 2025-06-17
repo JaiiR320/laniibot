@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, MessageFlags } = require("discord.js");
+const logger = require("../../utils/logger");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -17,6 +18,11 @@ module.exports = {
         .setRequired(true)
     ),
   async execute(interaction) {
+    logger.info("AddRole", `Command initiated by ${interaction.user.tag}`, {
+      targetUser: interaction.options.getUser("user").tag,
+      role: interaction.options.getRole("role").name,
+    });
+
     // Defer the reply to give time for the operation
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
@@ -29,18 +35,21 @@ module.exports = {
       .catch(() => null);
 
     if (!member) {
+      logger.warn("AddRole", `User not found in server`, { userId: user.id });
       return interaction.editReply({
         content: "Could not find that user in this server.",
       });
     }
 
     if (!role) {
+      logger.warn("AddRole", "Invalid role provided");
       return interaction.editReply({ content: "Please provide a valid role." });
     }
 
     try {
       // Check if the bot has permission to manage roles
       if (!interaction.guild.members.me.permissions.has("ManageRoles")) {
+        logger.warn("AddRole", "Bot lacks ManageRoles permission");
         return interaction.editReply({
           content:
             "I don't have permission to manage roles. Please check my permissions.",
@@ -51,6 +60,10 @@ module.exports = {
       if (
         interaction.guild.members.me.roles.highest.position <= role.position
       ) {
+        logger.warn("AddRole", "Role position too high", {
+          botRolePosition: interaction.guild.members.me.roles.highest.position,
+          targetRolePosition: role.position,
+        });
         return interaction.editReply({
           content: `I can't assign this role because it's higher than or equal to my highest role. (My highest role position: ${interaction.guild.members.me.roles.highest.position}, Role to assign position: ${role.position})`,
         });
@@ -58,12 +71,16 @@ module.exports = {
 
       // Add the role to the member
       await member.roles.add(role);
+      logger.info(
+        "AddRole",
+        `Successfully added role ${role.name} to user ${user.tag}`
+      );
 
       return interaction.editReply({
         content: `Successfully added the role ${role} to ${user}.`,
       });
     } catch (error) {
-      console.error("Error adding role:", error);
+      logger.error("AddRole", "Error adding role", error);
       return interaction.editReply({
         content: `Failed to add role: ${error.message}`,
       });
