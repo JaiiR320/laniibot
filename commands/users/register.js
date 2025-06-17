@@ -5,7 +5,7 @@ const {
   ButtonBuilder,
   ButtonStyle,
 } = require("discord.js");
-const supabase = require("../../db/client.ts");
+const supabase = require("../../db/client.js");
 const logger = require("../../utils/logger");
 
 module.exports = {
@@ -35,8 +35,9 @@ module.exports = {
     // Send initial non-ephemeral message
     await interaction.reply({
       content: `${interaction.user.tag} is attempting to register ${player}${
-        user ? ` for ${user.tag}` : ""
+        user ? ` for <@${user.id}>` : ""
       }`,
+      flags: [4096],
     });
 
     logger.debug(
@@ -44,30 +45,31 @@ module.exports = {
       `Processing registration for player: ${player}, Discord ID: ${discordId}, Guild ID: ${guildId}`
     );
 
-    const response = await fetch(
-      `https://gameinfo.albiononline.com/api/gameinfo/search?q=${player}`
-    );
+    // Check if player is in the guild
+    // const response = await fetch(
+    //   `https://gameinfo.albiononline.com/api/gameinfo/search?q=${player}`
+    // );
 
-    const data = await response.json();
-    logger.debug("Register", `API Response for ${player}:`, data);
+    // const data = await response.json();
+    // logger.debug("Register", `API Response for ${player}:`, data);
 
-    if (!data.players || data.players.length === 0) {
-      logger.warn("Register", `Player not found in Albion Online: ${player}`);
-      await interaction.followUp({ content: "Player not found." });
-      return;
-    }
+    // if (!data.players || data.players.length === 0) {
+    //   logger.warn("Register", `Player not found in Albion Online: ${player}`);
+    //   await interaction.followUp({ content: "Player not found." });
+    //   return;
+    // }
 
-    const foundPlayer = data.players[0];
-    logger.info(
-      "Register",
-      `Found player: ${foundPlayer.Name}, Guild: ${foundPlayer.GuildName}`
-    );
+    // const foundPlayer = data.players[0];
+    // logger.info(
+    //   "Register",
+    //   `Found player: ${foundPlayer.Name}, Guild: ${foundPlayer.GuildName}`
+    // );
 
-    if (!foundPlayer.GuildName) {
-      logger.warn("Register", `Player ${foundPlayer.Name} is not in a guild`);
-      await interaction.followUp({ content: "Player is not in a guild." });
-      return;
-    }
+    // if (!foundPlayer.GuildName) {
+    //   logger.warn("Register", `Player ${foundPlayer.Name} is not in a guild`);
+    //   await interaction.followUp({ content: "Player is not in a guild." });
+    //   return;
+    // }
 
     // Get the server's associated Albion guild and member role
     const { data: serverGuild, error: guildError } = await supabase
@@ -92,6 +94,12 @@ module.exports = {
       return;
     }
 
+    // TODO: REMOVE AFTER INITIAL TESTING
+    const foundPlayer = {
+      Name: player,
+      GuildName: serverGuild.albion_guild_name,
+    };
+
     logger.debug(
       "Register",
       `Server's associated Albion guild: ${serverGuild.albion_guild_name}`
@@ -101,16 +109,17 @@ module.exports = {
       `Player's current guild: ${foundPlayer.GuildName}`
     );
 
-    if (serverGuild.albion_guild_name !== foundPlayer.GuildName) {
-      logger.warn("Register", `Guild mismatch for player ${foundPlayer.Name}`, {
-        playerGuild: foundPlayer.GuildName,
-        serverGuild: serverGuild.albion_guild_name,
-      });
-      await interaction.followUp({
-        content: `Player's guild (${foundPlayer.GuildName}) does not match this server's associated guild (${serverGuild.albion_guild_name}).`,
-      });
-      return;
-    }
+    // Check if player is in the server's associated guild
+    // if (serverGuild.albion_guild_name !== foundPlayer.GuildName) {
+    //   logger.warn("Register", `Guild mismatch for player ${foundPlayer.Name}`, {
+    //     playerGuild: foundPlayer.GuildName,
+    //     serverGuild: serverGuild.albion_guild_name,
+    //   });
+    //   await interaction.followUp({
+    //     content: `Player's guild (${foundPlayer.GuildName}) does not match this server's associated guild (${serverGuild.albion_guild_name}).`,
+    //   });
+    //   return;
+    // }
 
     // Send confirmation message (ephemeral)
     const confirmButton = new ButtonBuilder()
@@ -208,8 +217,9 @@ module.exports = {
       );
       await interaction.followUp({
         content: `✅ Successfully registered ${player}${
-          user ? ` for ${user.tag}` : ""
+          user ? ` for <@${user.id}>` : ""
         } and assigned member role.`,
+        flags: [4096],
       });
     } catch (error) {
       logger.error("Register", "Registration timed out or failed", error);

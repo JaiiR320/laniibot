@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, MessageFlags } = require("discord.js");
 const axios = require("axios");
-const supabase = require("../../db/client.ts");
+const supabase = require("../../db/client.js");
 const logger = require("../../utils/logger");
 const { isKeeper } = require("../../utils/permissions");
 
@@ -28,10 +28,7 @@ module.exports = {
     ),
   async execute(interaction) {
     logger.info("Battle", "Checking keeper permissions");
-    const isUserKeeper = await isKeeper(
-      interaction.guildId,
-      interaction.user.id
-    );
+    const isUserKeeper = await isKeeper(interaction.guild, interaction.user.id);
 
     if (!isUserKeeper) {
       logger.warn("Battle", "User does not have keeper role", {
@@ -56,16 +53,7 @@ module.exports = {
       content: `Battle command initiated by <@${interaction.user.id}>\nBoard URL: ${boardUrl}\nGuild: ${guild}\nRole: ${role}`,
     });
 
-    const battleIds = battleIDs(boardUrl);
-    if (!battleIds) {
-      logger.warn("Battle", "Invalid battle board URL", { boardUrl });
-      return interaction.followUp({
-        content: "Invalid URL.",
-      });
-    }
-
-    const isEU = boardUrl.includes("eu.albionbattles.com");
-    const players = await getPlayers(battleIds, guild, isEU);
+    const players = await getPlayers(boardUrl, guild);
 
     logger.info(
       "Battle",
@@ -135,65 +123,73 @@ module.exports = {
   },
 };
 
+// Example URLS
+// https://albionbb.com/battles/1218601711
+// https://albionbb.com/battles/multi?ids=1219723845,1219734327,1219742952
+// https://albionbattles.com/battles/1218601711
+// https://albionbattles.com/multilog?ids=1218601711,1218599037
 function battleIDs(url) {
   try {
-    const urlObj = new URL(url);
-
-    // Check for both domains
-    if (
-      !["albionbattles.com", "eu.albionbattles.com"].includes(urlObj.hostname)
-    ) {
-      logger.warn("Battle", "Invalid battle board domain", { url });
-      return [];
+    const path = url.split("/").pop();
+    if (path.includes("multi")) {
+      const ids = path.split("=")[1].split(",");
+      return ids;
     }
-
-    if (urlObj.pathname.startsWith("/battles/")) {
-      // Single battle URL
-      const battleId = urlObj.pathname.split("/").pop();
-      logger.debug("Battle", "Found single battle ID", { battleId });
-      return [battleId];
-    }
-
-    if (urlObj.pathname === "/multilog") {
-      // Multilog URL
-      const ids = urlObj.searchParams.get("ids");
-      if (!ids) {
-        logger.warn("Battle", "No battle IDs in multilog URL");
-        return [];
-      }
-      const battleIds = ids.split(",");
-      logger.debug("Battle", "Found multiple battle IDs", { battleIds });
-      return battleIds;
-    }
-
-    return [];
+    return [path];
   } catch (error) {
-    logger.error("Battle", "Error parsing battle board URL", error);
+    logger.error("Battle", "Error parsing battle URL", error);
     return [];
   }
 }
 
-async function getPlayers(battleIds, guildName, isEU) {
+async function getPlayers(boardUrl, guildName) {
+  const ids = battleIDs(boardUrl);
+  logger.info("Battle", `Found ${ids.length} battle IDs: ${ids.join(", ")}`);
+  if (boardUrl.includes("albionbb.com")) {
+    return await getPlayersAlbionBB(ids, guildName);
+  } else if (boardUrl.includes("albionbattles.com")) {
+    return await getPlayersAlbionBattles(ids, guildName);
+  } else {
+    logger.warn("Battle", `Invalid battle board domain: ${boardUrl}`);
+    return [];
+  }
+}
+
+async function getPlayersAlbionBattles(ids, guildName) {
   try {
-    logger.debug("Battle", "Fetching players from battle board", {
-      battleIds,
-      guildName,
-      isEU,
-    });
-    const response = await axios.get(
-      `https://api${
-        isEU ? "-eu" : ""
-      }.albionbattles.com/battles/multilog/${battleIds.join(",")}`
+    const response = await fetch(
+      `https://api.albionbattles.com/battles/multilog/${ids.join(",")}`
     );
-    // all players from board
-    const players = response.data.players.players;
-    const playerData = [];
+    const data = await response.json();
+    const players = data.players.players;
+    const guildMembers = [];
     for (const player of players) {
       if (player.guildName === guildName) {
-        playerData.push(player.name);
+        guildMembers.push(player.name);
       }
     }
-    return playerData;
+    return guildMembers;
+  } catch (error) {
+    logger.error("Battle", "Error fetching players from battle board", error);
+    return [];
+  }
+}
+
+async function getPlayersAlbionBB(ids, guildName) {
+  try {
+    const response = await fetch(
+      `https://api.albionbb.com/us/battles/kills?ids=${ids.join(",")}`
+    );
+    const kills = await response.json();
+    const guildMembers = new Set();
+    kills.forEach((event) => {
+      if (event.Killer.GuildName === guildName) {
+        guildMembers.add(event.Killer.Name);
+      } else if (event.Victim.GuildName === guildName) {
+        guildMembers.add(event.Victim.Name);
+      }
+    });
+    return Array.from(guildMembers);
   } catch (error) {
     logger.error("Battle", "Error fetching players from battle board", error);
     return [];

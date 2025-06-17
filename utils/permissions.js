@@ -1,13 +1,13 @@
-const supabase = require("../db/client.ts");
+const supabase = require("../db/client.js");
 const logger = require("./logger");
 
 /**
  * Checks if a user has the keeper role for a specific guild
- * @param {string} guildId - The Discord guild ID
+ * @param {string} guild - The Discord guild
  * @param {string} userId - The Discord user ID
  * @returns {Promise<boolean>} - Whether the user is a keeper
  */
-async function isKeeper(guildId, userId) {
+async function isKeeper(guild, userId) {
   logger.info("Permissions", `Checking keeper role for user ${userId}`);
 
   try {
@@ -15,7 +15,7 @@ async function isKeeper(guildId, userId) {
     const { data: guildData, error } = await supabase
       .from("guilds")
       .select("keeper_role_id")
-      .eq("discord_id", guildId)
+      .eq("discord_id", guild.id)
       .single();
 
     if (error || !guildData) {
@@ -24,7 +24,6 @@ async function isKeeper(guildId, userId) {
     }
 
     // Get the guild member
-    const guild = await global.client.guilds.fetch(guildId);
     const member = await guild.members.fetch(userId);
 
     // Check if the member has the keeper role

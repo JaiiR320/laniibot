@@ -4,8 +4,7 @@
   "description": "A Discord bot that can add roles to multiple users",
   "main": "main.js",
   "scripts": {
-    "start": "node main.js",
-    "mass": "node mass.js"
+    "start": "node deploy-commands.js && node main.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",

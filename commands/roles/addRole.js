@@ -1,5 +1,6 @@
-const { SlashCommandBuilder, MessageFlags } = require("discord.js");
+const { SlashCommandBuilder } = require("discord.js");
 const logger = require("../../utils/logger");
+const { UserSelectMenuBuilder, ActionRowBuilder } = require("discord.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -23,8 +24,28 @@ module.exports = {
       role: interaction.options.getRole("role").name,
     });
 
+    const userMenu = new UserSelectMenuBuilder()
+      .setCustomId("user")
+      .setMaxValues(25);
+    const userRow = new ActionRowBuilder().setComponents(userMenu);
+
+    const userList = [];
+
+    const message = await interaction.channel.send({
+      content: "Select the users to add the role to",
+      components: [userRow],
+    });
+
+    const users = await message.awaitMessageComponent({
+      time: 30000,
+    });
+
+    console.log(users);
+
+    return;
+
     // Defer the reply to give time for the operation
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply();
 
     const user = interaction.options.getUser("user");
     const role = interaction.options.getRole("role");
@@ -78,6 +99,7 @@ module.exports = {
 
       return interaction.editReply({
         content: `Successfully added the role ${role} to ${user}.`,
+        flags: [4096],
       });
     } catch (error) {
       logger.error("AddRole", "Error adding role", error);

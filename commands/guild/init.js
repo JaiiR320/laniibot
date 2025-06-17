@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, MessageFlags } = require("discord.js");
-const supabase = require("../../db/client.ts");
+const supabase = require("../../db/client.js");
 const logger = require("../../utils/logger");
 
 module.exports = {
